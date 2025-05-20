@@ -279,8 +279,8 @@ namespace CommonLib.Implementations
         /// <param name="services"></param>
         public static void AddAppLogger(this IServiceCollection services)
         {
-
-            services.AddSession();
+            //services.AddDistributedMemoryCache();
+            //services.AddSession();
             services.AddHttpContextAccessor();
             services.AddSingleton<IInfoLogger, CInfoLogger>();
             services.AddSingleton<IErrorLogger, CErrorLogger>();
