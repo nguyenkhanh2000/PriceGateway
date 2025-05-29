@@ -1,6 +1,7 @@
 ﻿using CommonLib.Implementations;
 using CommonLib.Interfaces;
 using MonitorCore.Interfaces;
+using PriceGateway.BLL;
 using PriceGateway.Hubs;
 using PriceGateway.Implementations;
 using PriceGateway.Interfaces;
@@ -18,16 +19,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAppLogger();
 builder.Services.AddHttpClient();
 
-builder.Services.AddTransient<IPriceHandle,CPriceHandle>();
-//builder.Services.AddTransient<IS6GApp, CS6GApp>();
-//builder.Services.AddTransient<IErrorLogger, CErrorLogger>();
-//builder.Services.AddTransient<ISqlLogger, CSqlLogger>();
-//builder.Services.AddTransient<IInfoLogger, CInfoLogger>();
-//builder.Services.AddTransient<IDebugLogger, CDebugLogger>();
-//builder.Services.AddTransient<ICommon, CCommon>();
-//builder.Services.AddTransient<IMonitor, CMonitor>();
-//builder.Services.AddHttpContextAccessor();
-
 builder.Services.AddDistributedMemoryCache(); // Cung cấp IDistributedCache - netcore 3.1 ngầm định thêm implementation mặc định cho IDistributedCache, cần thêm trước AddSession()
 builder.Services.AddSession();
 
@@ -36,10 +27,17 @@ builder.Services.Configure<IISOptions>(options =>
     options.AutomaticAuthentication = false;
 });
 
-//Connect Redis
+//Connect Redis 250
 var redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionString").Value;
 builder.Services.AddSingleton<Lazy<ConnectionMultiplexer>>(sp => new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect($"{redisConnectionString}")));
+//Connect Redis Sentinel
+var redisConnectionString2 = builder.Configuration.GetSection("Redis:ConnectionString_NewAPP").Value;
+builder.Services.AddSingleton<Lazy<ConnectionMultiplexer>>(sp =>
+    new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(redisConnectionString2)));
 
+builder.Services.AddTransient<IPriceHandle, CPriceHandle>();
+builder.Services.AddSingleton<IPriceGateway, CPriceGateway>();
+builder.Services.AddHostedService<PriceGatewayListenerService>();
 //add signalR
 builder.Services.AddSignalR();
 //builder.Services.AddHostedService<RealtimeDataPusher>();
@@ -83,5 +81,7 @@ app.UseEndpoints(endpoints =>
 });
 //map signalR hub endpoint
 app.MapHub<HubEx>("/HubKhanhNV");
+app.MapHub<Hub_HSX>("/HubHSX");
+app.MapHub<Hub_HNX>("/HubHNX");
 
 app.Run();

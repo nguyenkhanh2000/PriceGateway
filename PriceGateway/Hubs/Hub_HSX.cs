@@ -4,7 +4,7 @@ using PriceGateway.Models;
 
 namespace PriceGateway.Hubs
 {
-    public sealed class HubEx : Hub<IHubClient>
+    public sealed class Hub_HSX:Hub<IHubClient>
     {
         public override Task OnConnectedAsync()
         {
@@ -75,26 +75,6 @@ namespace PriceGateway.Hubs
                 Console.WriteLine("-----------------------------------");
             }
             await Task.CompletedTask;
-        }
-    }
-    public class RealtimeDataPusher : BackgroundService
-    {
-        private readonly IHubContext<HubEx> _hubContext;
-
-        public RealtimeDataPusher(IHubContext<HubEx> hubContext)
-        {
-            _hubContext = hubContext;
-        }
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            int count = 1;
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                var time = DateTime.Now.ToString("HH:mm:ss");
-                await _hubContext.Clients.All.SendAsync("ReceiveMessage", "Server", $"Message {count++} at {time}");
-                await Task.Delay(200, stoppingToken);
-            }
         }
     }
 }
