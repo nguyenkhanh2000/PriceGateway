@@ -41,6 +41,8 @@ namespace BaseRedisLib.Interfaces
         bool ZSet_UpdateRow(string zKey, string zValue, long zScore);
         List<HashKeyRedis> Hash_Get_All(string key);
         bool HashSet(string key, string hashField, object value);
+        string Hash_Get(string key, string field);
         bool HashDelete(string key, string hashField);
+        bool Key_Exists(string key);
     }
 }

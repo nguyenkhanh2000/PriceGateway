@@ -2,10 +2,13 @@
 using BaseRedisLib.Interfaces;
 using CommonLib.Implementations;
 using CommonLib.Interfaces;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using PriceGateway.Interfaces;
 using StackExchange.Redis;
 using StockCore.Redis.MW;
+using System.Text;
 using SystemCore.Entities;
 using static BaseRedisLib.Implementations.CRedisRepository;
 
@@ -24,24 +27,58 @@ namespace PriceGateway.Implementations
             this._redis_Sentinel = redis_Sentinel.Value;    
             this._configuration = configuration;
         }
-        public async Task<EResponseResult> fnc_Get_Full_Quote(string Exchange)
+        public async Task<EResponseResult> fnc_Get_Full_Quote(string Exchange, string TypeMsg, string Board, string Symbol)
         {
             try
             {
                 ConnectRedisMWS5GModel CM = new ConnectRedisMWS5GModel();
                 //CM.key = _configuration.GetSection(CMetketConfig.__REDIS_KEY_S5G_LATEST_INVESTING).Value;
-                CM.key = "FULL_ROW_QUOTE";
-                CM.DB = 6;
-                //CM.connectString = "10.26.7.84:6379";
-                //var connectRedis = ConnectionMultiplexer.Connect(CM.connectString);
+                string[] listSymbol = null;
+                //Ghép chuỗi key 
+                var keyBuilder = new StringBuilder();
+                keyBuilder.Append(Exchange); // keyName là bắt buộc (giả định không null)
 
+                if (!string.IsNullOrEmpty(TypeMsg))
+                    keyBuilder.Append(":").Append(TypeMsg);
+
+                if (!string.IsNullOrEmpty(Board))
+                    keyBuilder.Append(":").Append(Board);
+
+                CM.key = keyBuilder.ToString();
+                CM.DB = 0;
                 IRedisRepository _cRedisRepository = new CRedisRepository(_s6GApp, _redis_Sentinel, CM.DB);
+                List<dynamic> _lstData = new List<dynamic>();
 
-                List<HashKeyRedis> DataRD_Hash = _cRedisRepository.Hash_Get_All(CM.key);
+                //Nếu tồn tại mã - get data theo mã
+                if (!string.IsNullOrWhiteSpace(Symbol))
+                {
+                    //tách chuỗi Symbol và upper
+                    listSymbol = Symbol.Split(',').Select(code => code.ToUpper()).ToArray();
 
-                EResponseResult RM = new EResponseResult();
-                RM.Code = EGlobalConfig.__CODE_ERROR_IN_LAYER_BLL;
-                return RM;
+                    foreach (var _symbol in listSymbol)
+                    {
+                        string value = _cRedisRepository.Hash_Get(CM.key, _symbol);
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = "" };
+                        }
+                        dynamic data = JsonConvert.DeserializeObject<dynamic>(value);
+                        _lstData.Add(data);
+                    }
+                }
+                else //GetAll
+                {
+                    List<HashKeyRedis> DataRD_Hash = _cRedisRepository.Hash_Get_All(CM.key);
+
+                    foreach (var item in DataRD_Hash)
+                    {
+                        dynamic cData = JsonConvert.DeserializeObject<dynamic>(item.Value);
+
+                        _lstData.Add(cData);
+                    }
+                }
+
+                return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = _lstData };
             }
             catch (Exception ex)
             {

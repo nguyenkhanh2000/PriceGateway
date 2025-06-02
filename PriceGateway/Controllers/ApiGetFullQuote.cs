@@ -1,5 +1,6 @@
 ﻿using CommonLib.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using PriceGateway.BLL;
 using PriceGateway.Interfaces;
 using SystemCore.Entities;
@@ -18,15 +19,17 @@ namespace PriceGateway.Controllers
             this._cS6GApp = cS6GApp;
         }
         [HttpGet]
-        public async Task<IActionResult> Api_Get_Full_Quote(string Exchange)
+        public async Task<IActionResult> Api_Get_Full_Quote(string exchange, string typemsg)
         {
             try
             {
+                string Board = HttpContext.Request.Query["board"];
+                string Symbol = HttpContext.Request.Query["symbol"];
                 //1.handle
-                EResponseResult responseResult = await this._handle.fnc_Get_Full_Quote(Exchange);
-
+                EResponseResult responseResult = await this._handle.fnc_Get_Full_Quote(exchange, typemsg, Board, Symbol);
+                string json = JsonConvert.SerializeObject(responseResult);
                 // 2. return response (code 200)
-                return Content("json");
+                return Content(json);
             }
             catch (Exception ex) 
             {

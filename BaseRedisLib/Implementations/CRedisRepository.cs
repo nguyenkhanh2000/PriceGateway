@@ -1155,8 +1155,6 @@ namespace BaseRedisLib.Implementations
                 List<HashKeyRedis> lstHashKey = new List<HashKeyRedis>(hashSetEntries.Length);
 
 
-
-
                 //Dictionary<string, string> dic = new Dictionary<string, string>();
                 foreach (HashEntry item in hashSetEntries)
                 {
@@ -1211,7 +1209,25 @@ namespace BaseRedisLib.Implementations
             }
 
         }
-
+        public string Hash_Get(string key, string field)
+        {
+            // debug
+            TExecutionContext ec = this._s6GApp.DebugLogger.WriteBufferBegin($"key={this._s6GApp.Common.CheckNullString(key)}");
+            try
+            {
+                RedisValue value = this._db.HashGet(key, field);
+                if (value.IsNullOrEmpty)
+                {
+                    return null;
+                }
+                return value.ToString();
+            }
+            catch (Exception ex)
+            {
+                this._s6GApp.ErrorLogger.LogErrorContext(ex, ec);
+                return null;
+            }
+        }
         public bool HashDelete(string key, string hashField)
         {
             // debug
@@ -1233,6 +1249,9 @@ namespace BaseRedisLib.Implementations
             public string Key { get; set; }
             public string Value { get; set; }
         }
-
+        public bool Key_Exists(string key)
+        {
+            return this._db.KeyExists(key);
+        }
     }
 }
