@@ -8,8 +8,10 @@ using Newtonsoft.Json;
 using PriceGateway.Interfaces;
 using StackExchange.Redis;
 using StockCore.Redis.MW;
+using System;
 using System.Text;
 using SystemCore.Entities;
+using SystemCore.Temporaries;
 using static BaseRedisLib.Implementations.CRedisRepository;
 
 namespace PriceGateway.Implementations
@@ -29,6 +31,7 @@ namespace PriceGateway.Implementations
         }
         public async Task<EResponseResult> fnc_Get_Full_Quote(string Exchange, string TypeMsg, string Board, string Symbol)
         {
+            TExecutionContext ec = this._s6GApp.DebugLogger.WriteBufferBegin($"{EGlobalConfig.__STRING_BEFORE} Exchange={Exchange}, TypeMsg={TypeMsg}, Board={Board}, Symbol={Symbol}", true);
             try
             {
                 ConnectRedisMWS5GModel CM = new ConnectRedisMWS5GModel();
@@ -36,7 +39,7 @@ namespace PriceGateway.Implementations
                 string[] listSymbol = null;
                 //Ghép chuỗi key 
                 var keyBuilder = new StringBuilder();
-                keyBuilder.Append(Exchange); // keyName là bắt buộc (giả định không null)
+                keyBuilder.Append(Exchange); 
 
                 if (!string.IsNullOrEmpty(TypeMsg))
                     keyBuilder.Append(":").Append(TypeMsg);
@@ -77,7 +80,8 @@ namespace PriceGateway.Implementations
                         _lstData.Add(cData);
                     }
                 }
-
+                  
+                this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + _lstData.Count);
                 return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = _lstData };
             }
             catch (Exception ex)

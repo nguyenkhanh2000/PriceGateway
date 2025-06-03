@@ -28,10 +28,13 @@ namespace PriceGateway.BLL
         {
             try
             {
+                string channel_HSX = _configuration.GetSection(CConfig.__REDIS_CHANNEL_HSX).Value;
+                string channel_HNX = _configuration.GetSection(CConfig.__REDIS_CHANNEL_HNX).Value;
+
                 this._s6GApp.InfoLogger.LogInfo("StartListeningToRedisChannel");
 
                 var subscriber = _redis.GetSubscriber();
-                subscriber.Subscribe("KHANHDZ", (channel, message) =>
+                subscriber.Subscribe(channel_HSX, (channel, message) =>
                 {
                     // Gửi tin nhắn tới tất cả client đã kết nối thông qua SignalR
                     var msg = message.ToString();
@@ -39,7 +42,7 @@ namespace PriceGateway.BLL
                     //SendMessageToAllClients(msg);
 
                 });
-                subscriber.Subscribe("KHANHDZ2", (channel, message) =>
+                subscriber.Subscribe(channel_HNX, (channel, message) =>
                 {
                     // Gửi tin nhắn tới tất cả client đã kết nối thông qua SignalR
                     var msg = message.ToString();
