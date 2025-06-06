@@ -26,6 +26,8 @@ builder.Services.Configure<IISOptions>(options =>
 {
     options.AutomaticAuthentication = false;
 });
+//thêm cho config channel
+var hubMappings = builder.Configuration.GetSection("RedisChannels").Get<Dictionary<string, string>>();
 
 //Connect Redis 250
 var redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionString").Value;
@@ -80,8 +82,13 @@ app.UseEndpoints(endpoints =>
     });
 });
 //map signalR hub endpoint
-app.MapHub<HubEx>("/HubKhanhNV");
-app.MapHub<Hub_HSX>("/HubHSX");
-app.MapHub<Hub_HNX>("/HubHNX");
+//app.MapHub<HubEx>("/HubKhanhNV");
+//app.MapHub<Hub_HSX>("/HubHSX");
+//app.MapHub<Hub_HNX>("/HubHNX");
+
+foreach (var hub in hubMappings.Values.Distinct())
+{
+    app.MapHub<GenericHub>(hub);
+}
 
 app.Run();
