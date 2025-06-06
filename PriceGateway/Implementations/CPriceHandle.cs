@@ -93,5 +93,35 @@ namespace PriceGateway.Implementations
                 return RM;
             }
         }
+        public async Task<EResponseResult> fnc_Get_String_Seq(string keyName)
+        {
+            TExecutionContext ec = this._s6GApp.DebugLogger.WriteBufferBegin($"{EGlobalConfig.__STRING_BEFORE} keyName={keyName}", true);
+            try
+            {
+                ConnectRedisMWS5GModel CM = new ConnectRedisMWS5GModel();
+
+                CM.key = keyName;
+                CM.DB = 0;
+
+                IRedisRepository _cRedisRepository = new CRedisRepository(_s6GApp, _redis_Sentinel, CM.DB);
+
+                string DataRedis = _cRedisRepository.String_Get(CM.key,CM.DB);         
+                //convert to json
+                dynamic Seq_data = JsonConvert.DeserializeObject<dynamic>(DataRedis);
+
+                //object Seq = JsonConvert.DeserializeObject<object>(Seq_data);
+                this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + DataRedis.Length);
+
+                return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = Seq_data };
+            }
+            catch (Exception ex)
+            {
+                // log error + buffer data
+                this._s6GApp.ErrorLogger.LogError(ex);
+                EResponseResult RM = new EResponseResult();
+                RM.Code = EGlobalConfig.__CODE_ERROR_IN_LAYER_BLL;
+                return RM;
+            }
+        }
     }
 }
