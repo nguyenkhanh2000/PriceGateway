@@ -35,11 +35,17 @@ var redisConnectionString2 = builder.Configuration.GetSection("Redis:ConnectionS
 builder.Services.AddSingleton<Lazy<ConnectionMultiplexer>>(sp =>
     new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(redisConnectionString2)));
 
+//add signalR
+builder.Services.AddSignalR();
+
+builder.Services.AddSignalR()
+    .AddMessagePackProtocol(); // hỗ trợ MessagePack
+
 builder.Services.AddTransient<IPriceHandle, CPriceHandle>();
 builder.Services.AddSingleton<IPriceGateway, CPriceGateway>();
 builder.Services.AddHostedService<PriceGatewayListenerService>();
-//add signalR
-builder.Services.AddSignalR();
+
+
 //builder.Services.AddHostedService<RealtimeDataPusher>();
 string[] DomainCors = builder.Configuration.GetSection("DomainCors").Value.Split(",");
 builder.Services.AddCors(options =>
