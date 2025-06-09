@@ -15,9 +15,9 @@ namespace PriceGateway.BLL
         private readonly IHubContext<Hub_HSX, IHubClient> _hubClient_HSX;
         private readonly IHubContext<Hub_HNX, IHubClient> _hubClient_HNX;
 
-        private readonly IHubContext<ChannelHub> _hubChannel;
+        private readonly IHubContext<ChannelHub,IHubClient> _hubChannel;
         
-        public CPriceGateway(IS6GApp s6GApp, Lazy<ConnectionMultiplexer> redis, Lazy<ConnectionMultiplexer> redis_Sentinel, IConfiguration configuration, IHubContext<Hub_HSX, IHubClient> hubClient_HSX, IHubContext<Hub_HNX, IHubClient> hubClient_HNX, IHubContext<ChannelHub> hubChannel) 
+        public CPriceGateway(IS6GApp s6GApp, Lazy<ConnectionMultiplexer> redis, Lazy<ConnectionMultiplexer> redis_Sentinel, IConfiguration configuration, IHubContext<Hub_HSX, IHubClient> hubClient_HSX, IHubContext<Hub_HNX, IHubClient> hubClient_HNX, IHubContext<ChannelHub, IHubClient> hubChannel) 
         {
             this._s6GApp = s6GApp;
             this._redis = redis.Value;
@@ -31,10 +31,8 @@ namespace PriceGateway.BLL
         {
             try
             {
-                string channel_HSX = _configuration.GetSection(CConfig.__REDIS_CHANNEL_HSX).Value;
-                string channel_HNX = _configuration.GetSection(CConfig.__REDIS_CHANNEL_HNX).Value;
 
-                var channelNames = _configuration.GetSection("RedisChannels").Get<List<string>>();
+                var channelNames = _configuration.GetSection("Redis:RedisChannels").Get<List<string>>();
 
                 this._s6GApp.InfoLogger.LogInfo("StartListeningToRedisChannel");
 
@@ -42,30 +40,16 @@ namespace PriceGateway.BLL
 
                 foreach (var channel in channelNames) 
                 {
-                    subscriber.Subscribe(channel, (channel, message) =>
+                    subscriber.Subscribe(channel, async (channel, message) =>
                     {
                         // Gửi tin nhắn tới nhóm tương ứng với channel
                         var msg = message.ToString();
-                        _hubChannel.Clients.Group(channel).SendAsync("ReceiveMessage", msg);
+                        //_hubChannel.Clients.Group(channel).SendAsync("ReceiveMessage", msg);
+                        
+                        _hubChannel.Clients.Group(channel).ReceiveMessage(channel, msg);
+
                     });
                 }
-
-                //subscriber.Subscribe(channel_HSX, (channel, message) =>
-                //{
-                //    // Gửi tin nhắn tới tất cả client đã kết nối thông qua SignalR
-                //    var msg = message.ToString();
-                //    //_hubClient_HSX.Clients.All.ReceiveMessage("KHANHDZ", message);
-
-                //    _hubChannel.Clients.Group(channel_HSX).SendAsync("ReceiveMessage", msg);
-                //    //SendMessageToAllClients(msg);
-
-                //});
-                //subscriber.Subscribe(channel_HNX, (channel, message) =>
-                //{
-                //    // Gửi tin nhắn tới tất cả client đã kết nối thông qua SignalR
-                //    var msg = message.ToString();
-                //    _hubClient_HNX.Clients.All.ReceiveMessage("KHANHDZ2", message);
-                //});
             }
             catch(Exception ex)
             {

@@ -4,10 +4,10 @@ using PriceGateway.Interfaces;
 namespace PriceGateway.Hubs
 {
     
-    public sealed class ChannelHub: Hub
+    public sealed class ChannelHub: Hub<IHubClient>
     {
-        // Dictionary lưu trữ các client theo channel
-        private static readonly Dictionary<string, HashSet<string>> ChannelClients = new();
+        
+        private static readonly Dictionary<string, HashSet<string>> ChannelClients = new();    // Dictionary lưu trữ các client theo channel
         //Connected
         public override Task OnConnectedAsync()
         {
@@ -29,7 +29,8 @@ namespace PriceGateway.Hubs
 
             ChannelClients[channelName].Add(Context.ConnectionId);
             await Groups.AddToGroupAsync(Context.ConnectionId, channelName);
-            await Clients.Caller.SendAsync("Subscribed", channelName);
+            //await Clients.Caller.SendAsync("Subscribed", channelName);
+            await Clients.Caller.Subscribed(channelName);
         }
         // Hủy đăng ký một client khỏi channel
         public async Task UnsubscribeFromChannel(string channelName)
@@ -44,15 +45,17 @@ namespace PriceGateway.Hubs
             }
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, channelName);
-            await Clients.Caller.SendAsync("Unsubscribed", channelName);
+            //await Clients.Caller.SendAsync("Unsubscribed", channelName);
+            await Clients.Caller.Unsubscribed(channelName);
         }
         // Phương thức này sẽ được gọi khi có dữ liệu mới từ pool
-        public async Task SendMessageToChannel(string channelName, string message)
-        {
-            if (ChannelClients.ContainsKey(channelName))
-            {
-                await Clients.Group(channelName).SendAsync("ReceiveMessage", message);
-            }
-        }
+        //public async Task SendMessageToChannel(string channelName, string message)
+        //{
+        //    if (ChannelClients.ContainsKey(channelName))
+        //    {
+        //        //await Clients.Group(channelName).SendAsync("ReceiveMessage", message);
+        //        await Clients.Group(channelName).ReceiveMessage(channelName, message);
+        //    }
+        //}
     }
 }
