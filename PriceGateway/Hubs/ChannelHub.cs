@@ -11,13 +11,14 @@ namespace PriceGateway.Hubs
         //Connected
         public override Task OnConnectedAsync()
         {
+            //lưu thông tin Client connect đến signalR ở đây
             return base.OnConnectedAsync(); 
         }
         public override Task OnDisconnectedAsync(Exception? exception)
         {
+            //lưu thông tin Client disconnect đến signalR ở đây
             return base.OnDisconnectedAsync(exception); 
         }
-
 
         // Kết nối client vào một channel
         public async Task SubscribeToChannel(string channelName)

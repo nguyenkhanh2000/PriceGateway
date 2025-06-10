@@ -27,7 +27,7 @@ namespace PriceGateway.BLL
             this._hubClient_HNX = hubClient_HNX;
             this._hubChannel = hubChannel;
         }
-        public void StartListeningToRedisChannel()
+        public async Task StartListeningToRedisChannel()
         {
             try
             {
@@ -40,14 +40,20 @@ namespace PriceGateway.BLL
 
                 foreach (var channel in channelNames) 
                 {
-                    subscriber.Subscribe(channel, async (channel, message) =>
+                    await subscriber.SubscribeAsync(channel, async (channel, message) =>
                     {
-                        // Gửi tin nhắn tới nhóm tương ứng với channel
-                        var msg = message.ToString();
-                        //_hubChannel.Clients.Group(channel).SendAsync("ReceiveMessage", msg);
-                        
-                        _hubChannel.Clients.Group(channel).ReceiveMessage(channel, msg);
+                        try
+                        {
+                            // Gửi tin nhắn tới nhóm tương ứng với channel
+                            var msg = message.ToString();
+                            //_hubChannel.Clients.Group(channel).SendAsync("ReceiveMessage", msg);
 
+                            await _hubChannel.Clients.Group(channel).ReceiveMessage(channel, msg);
+                        }
+                        catch (Exception ex) 
+                        {
+                            this._s6GApp.ErrorLogger.LogError(ex);
+                        }
                     });
                 }
             }
@@ -55,13 +61,6 @@ namespace PriceGateway.BLL
             {
                 this._s6GApp.ErrorLogger.LogError(ex);
             }           
-        }
-        private async void SendMessageToAllClients(string message)
-        {
-            // Gửi thông điệp tới tất cả các client
-            //await _hubContext.Clients.All.SendAsync("ReceiveMessage", message);
-
-            await _hubClient_HSX.Clients.All.ReceiveMessage("KhanhDZ", message);
         }
     }
 }
