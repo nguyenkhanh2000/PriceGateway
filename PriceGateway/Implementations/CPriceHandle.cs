@@ -16,12 +16,25 @@ using static BaseRedisLib.Implementations.CRedisRepository;
 
 namespace PriceGateway.Implementations
 {
+    /// <summary>
+    /// khanhnv
+    /// Lớp CPriceHandle được đăng ký với dependency injection container của ASP.NET Core bằng phương thức AddTransient.
+    /// Mỗi khi có yêu cầu (request) đến service IPriceHandle, một thể hiện mới CPriceHandle sẽ được tạo ra
+    /// Việc sử dụng AddTransient phù hợp khi muốn một đối tượng tạo mới cho mỗi yêu cầu, thay vì chia sẻ đối tượng giữa các yêu cầu
+    /// </summary>
     public class CPriceHandle : IPriceHandle
     {
         public readonly IS6GApp _s6GApp;
         private readonly ConnectionMultiplexer _redis;
         private readonly ConnectionMultiplexer _redis_Sentinel;
         private IConfiguration _configuration;
+        /// <summary>
+        /// constructor
+        /// </summary>
+        /// <param name="s6GApp"></param>
+        /// <param name="redis"></param>
+        /// <param name="redis_Sentinel"></param>
+        /// <param name="configuration"></param>
         public CPriceHandle(IS6GApp s6GApp, Lazy<ConnectionMultiplexer> redis, Lazy<ConnectionMultiplexer> redis_Sentinel, IConfiguration configuration)
         {
             this._s6GApp = s6GApp;
@@ -29,6 +42,14 @@ namespace PriceGateway.Implementations
             this._redis_Sentinel = redis_Sentinel.Value;    
             this._configuration = configuration;
         }
+        /// <summary>
+        /// Api_Get_Full_Quote - khanhnv
+        /// </summary>
+        /// <param name="Exchange">Sàn</param>
+        /// <param name="TypeMsg">Loại Msg</param>
+        /// <param name="Board">bảng</param>
+        /// <param name="Symbol">mã chứng khoán</param>
+        /// <returns></returns>
         public async Task<EResponseResult> fnc_Get_Full_Quote(string Exchange, string TypeMsg, string Board, string Symbol)
         {
             TExecutionContext ec = this._s6GApp.DebugLogger.WriteBufferBegin($"{EGlobalConfig.__STRING_BEFORE} Exchange={Exchange}, TypeMsg={TypeMsg}, Board={Board}, Symbol={Symbol}", true);

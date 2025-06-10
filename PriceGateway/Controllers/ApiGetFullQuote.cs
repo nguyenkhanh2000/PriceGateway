@@ -7,17 +7,29 @@ using SystemCore.Entities;
 
 namespace PriceGateway.Controllers
 {
-    [Route(CPriceConfig.__ROUTE_API_GET_FULL_ROW_QUOTE)]
+    [Route(CPriceConfig.__ROUTE_API_GET_FULL_ROW_QUOTE)]  //Định nghĩa route của api
     [ApiController]
     public class ApiGetFullQuote : Controller
     {
         public readonly IS6GApp _cS6GApp;
         private readonly IPriceHandle _handle;
+        /// <summary>
+        /// constructor
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <param name="cS6GApp"></param>
         public ApiGetFullQuote(IPriceHandle handler, IS6GApp cS6GApp) 
         {
             this._handle = handler;
             this._cS6GApp = cS6GApp;
         }
+        /// <summary>
+        /// --khanhnv
+        /// Get data Full quote
+        /// </summary>
+        /// <param name="exchange"></param>
+        /// <param name="typemsg"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> Api_Get_Full_Quote(string exchange, string typemsg)
         {

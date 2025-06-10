@@ -3,8 +3,11 @@ using PriceGateway.Interfaces;
 
 namespace PriceGateway.Hubs
 {
-    
-    public sealed class ChannelHub: Hub<IHubClient>
+    /// <summary>
+    /// 2025-05-20 09:59:01 khanhnv
+    /// Quản lý kết nối và giao tiếp giữa client và server qua signalR
+    /// </summary>
+    public sealed class ChannelHub : Hub<IHubClient>
     {
         
         private static readonly Dictionary<string, HashSet<string>> ChannelClients = new();    // Dictionary lưu trữ các client theo channel
