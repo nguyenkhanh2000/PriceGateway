@@ -2,6 +2,10 @@
 
 namespace PriceGateway.Models
 {
+    /// <summary>
+    /// Lưu thông tin client
+    /// Lấy lại obj từ poolHSX stock5g
+    /// </summary>
     public class CSignalRCounter
     {
         private DateTime m_ConnectedDateTime = DateTime.Now;
@@ -59,8 +63,8 @@ namespace PriceGateway.Models
         // ===========================================================================================================================
 
     }
-    public static class SignalRConnections
-    {
-        public static ConcurrentDictionary<string, CSignalRCounter> Connections = new();
-    }
+    //public static class SignalRConnections
+    //{
+    //    public static ConcurrentDictionary<string, CSignalRCounter> Connections = new();
+    //}
 }

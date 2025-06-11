@@ -28,7 +28,7 @@ namespace PriceGateway.Hubs
             };
 
             // Lưu vào dictionary
-            SignalRConnections.Connections.TryAdd(connectionId, counter);
+            //SignalRConnections.Connections.TryAdd(connectionId, counter);
 
             Console.WriteLine($"Client connected: {connectionId}");
             SendMessage(counter.ConnectionID, counter.TransportName);
@@ -47,35 +47,35 @@ namespace PriceGateway.Hubs
 
             await Clients.All.ReceiveMessage(user, message);
         }
-        public async Task SendClientInfo(string os, string browser, string mobile, string screen, string page, string clientPrivateIP, string clientIPv6)
-        {
-            if (SignalRConnections.Connections.TryGetValue(Context.ConnectionId, out var counter))
-            {
-                counter.OS = os;
-                counter.Browser = browser;
-                counter.Mobile = mobile;
-                counter.Screen = screen;
-                counter.Page = page;
-                counter.ClientPrivateIP = clientPrivateIP;
-                counter.ClientIPv6 = clientIPv6;
-            }
-            var ss = SignalRConnections.Connections;
-            foreach (var kvp in ss)
-            {
-                var connId = kvp.Key;
-                var info = kvp.Value;
-                Console.WriteLine($"ConnectionID: {connId}");
-                Console.WriteLine($"  OS: {info.OS}");
-                Console.WriteLine($"  Browser: {info.Browser}");
-                Console.WriteLine($"  Mobile: {info.Mobile}");
-                Console.WriteLine($"  Screen: {info.Screen}");
-                Console.WriteLine($"  Page: {info.Page}");
-                Console.WriteLine($"  PrivateIP: {info.ClientPrivateIP}");
-                Console.WriteLine($"  IPv6: {info.ClientIPv6}");
-                Console.WriteLine("-----------------------------------");
-            }
-            await Task.CompletedTask;
-        }
+        //public async Task SendClientInfo(string os, string browser, string mobile, string screen, string page, string clientPrivateIP, string clientIPv6)
+        //{
+        //    if (SignalRConnections.Connections.TryGetValue(Context.ConnectionId, out var counter))
+        //    {
+        //        counter.OS = os;
+        //        counter.Browser = browser;
+        //        counter.Mobile = mobile;
+        //        counter.Screen = screen;
+        //        counter.Page = page;
+        //        counter.ClientPrivateIP = clientPrivateIP;
+        //        counter.ClientIPv6 = clientIPv6;
+        //    }
+        //    var ss = SignalRConnections.Connections;
+        //    foreach (var kvp in ss)
+        //    {
+        //        var connId = kvp.Key;
+        //        var info = kvp.Value;
+        //        Console.WriteLine($"ConnectionID: {connId}");
+        //        Console.WriteLine($"  OS: {info.OS}");
+        //        Console.WriteLine($"  Browser: {info.Browser}");
+        //        Console.WriteLine($"  Mobile: {info.Mobile}");
+        //        Console.WriteLine($"  Screen: {info.Screen}");
+        //        Console.WriteLine($"  Page: {info.Page}");
+        //        Console.WriteLine($"  PrivateIP: {info.ClientPrivateIP}");
+        //        Console.WriteLine($"  IPv6: {info.ClientIPv6}");
+        //        Console.WriteLine("-----------------------------------");
+        //    }
+        //    await Task.CompletedTask;
+        //}
     }
     public class RealtimeDataPusher : BackgroundService
     {

@@ -44,6 +44,7 @@ builder.Services.AddSignalR()
 builder.Services.AddTransient<IPriceHandle, CPriceHandle>();
 builder.Services.AddSingleton<IPriceGateway, CPriceGateway>();
 builder.Services.AddHostedService<PriceGatewayListenerService>();
+builder.Services.AddSingleton<IClientConnectionStore, ClientConnectionStore>();
 
 
 //builder.Services.AddHostedService<RealtimeDataPusher>();

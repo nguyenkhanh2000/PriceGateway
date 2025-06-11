@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using PriceGateway.Interfaces;
+using PriceGateway.Models;
+using System.Collections.Concurrent;
 
 namespace PriceGateway.Hubs
 {
@@ -9,16 +11,38 @@ namespace PriceGateway.Hubs
     /// </summary>
     public sealed class ChannelHub : Hub<IHubClient>
     {
+        private readonly IClientConnectionStore _clientStore;
+        private readonly ConcurrentDictionary<string, HashSet<string>> ChannelClients = new();    // Dictionary lưu trữ các client theo channel
+        public ChannelHub(IClientConnectionStore clientStore) 
+        {
+            this._clientStore = clientStore;
+        }
         
-        private static readonly Dictionary<string, HashSet<string>> ChannelClients = new();    // Dictionary lưu trữ các client theo channel
         //Connected
         public override Task OnConnectedAsync()
         {
             //lưu thông tin Client connect đến signalR ở đây
+            var httpContext = Context.GetHttpContext();
+            var connectionId = Context.ConnectionId;
+            var counter = new CSignalRCounter
+            {
+                ConnectionID = connectionId,
+                TransportName = httpContext?.Request.Query["transportType"],
+                InitHubTime = DateTime.Now.Ticks.ToString(),
+
+                // Lấy từ ServerVariables (giả lập qua Headers nếu bạn không có server classic)
+                ServerIP = httpContext?.Connection.LocalIpAddress?.ToString(),
+                ClientPublicIP = httpContext?.Connection.RemoteIpAddress?.ToString(),
+                HttpUserAgent = httpContext?.Request.Headers["User-Agent"].ToString(),
+                HttpCookie = httpContext?.Request.Headers["Cookie"].ToString(),
+            };
+            this._clientStore.Add(counter);
+            
             return base.OnConnectedAsync(); 
         }
         public override Task OnDisconnectedAsync(Exception? exception)
         {
+            this._clientStore.Remove(Context.ConnectionId);
             //lưu thông tin Client disconnect đến signalR ở đây
             return base.OnDisconnectedAsync(exception); 
         }
@@ -44,13 +68,17 @@ namespace PriceGateway.Hubs
                 ChannelClients[channelName].Remove(Context.ConnectionId);
                 if (ChannelClients[channelName].Count == 0)
                 {
-                    ChannelClients.Remove(channelName);
+                    ChannelClients.TryRemove(channelName, out _);
                 }
             }
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, channelName);
             //await Clients.Caller.SendAsync("Unsubscribed", channelName);
             await Clients.Caller.Unsubscribed(channelName);
+        }
+        public string sendClientInfoToServer(string strConnectionID, CALR objCALR, CClientInfo objCCI, string strClientPublicIP, string strClientIPv6, string strInitHubTime)
+        {
+            return strConnectionID;
         }
         // Phương thức này sẽ được gọi khi có dữ liệu mới từ pool
         //public async Task SendMessageToChannel(string channelName, string message)

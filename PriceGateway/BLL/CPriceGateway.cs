@@ -18,10 +18,13 @@ namespace PriceGateway.BLL
         private readonly ConnectionMultiplexer _redis;
         private readonly ConnectionMultiplexer _redis_Sentinel;
         private IConfiguration _configuration; //Cấu hình ứng dụng
+        private readonly IClientConnectionStore _clientStore;
+
         private readonly IHubContext<Hub_HSX, IHubClient> _hubClient_HSX;
         private readonly IHubContext<Hub_HNX, IHubClient> _hubClient_HNX;
         private readonly IHubContext<ChannelHub,IHubClient> _hubChannel; // HubContext cho các kênh Redis
 
+        private Timer _clientCountTimer;
         /// <summary>
         /// constructor CPriceGateway - khanhnv
         /// </summary>
@@ -32,15 +35,21 @@ namespace PriceGateway.BLL
         /// <param name="hubClient_HSX"></param>
         /// <param name="hubClient_HNX"></param>
         /// <param name="hubChannel"></param>
-        public CPriceGateway(IS6GApp s6GApp, Lazy<ConnectionMultiplexer> redis, Lazy<ConnectionMultiplexer> redis_Sentinel, IConfiguration configuration, IHubContext<Hub_HSX, IHubClient> hubClient_HSX, IHubContext<Hub_HNX, IHubClient> hubClient_HNX, IHubContext<ChannelHub, IHubClient> hubChannel) 
+        /// <param name="clientStore"></param>
+        public CPriceGateway(IS6GApp s6GApp, Lazy<ConnectionMultiplexer> redis, Lazy<ConnectionMultiplexer> redis_Sentinel, IConfiguration configuration, IHubContext<Hub_HSX, IHubClient> hubClient_HSX, IHubContext<Hub_HNX, IHubClient> hubClient_HNX, IHubContext<ChannelHub, IHubClient> hubChannel, IClientConnectionStore clientStore) 
         {
             this._s6GApp = s6GApp;
             this._redis = redis.Value;
             this._redis_Sentinel = redis_Sentinel.Value;
             this._configuration = configuration;
+            this._clientStore = clientStore;
+
             this._hubClient_HSX = hubClient_HSX;
             this._hubClient_HNX = hubClient_HNX;
             this._hubChannel = hubChannel;
+
+            // Khởi tạo Timer để đếm số lượng client mỗi 30 giây
+            _clientCountTimer = new Timer(CountClientsAndLog, null, TimeSpan.Zero, TimeSpan.FromSeconds(60));
         }
         /// <summary>
         /// Bắt đầu sub channel Redis - async(subscriber)
@@ -50,7 +59,7 @@ namespace PriceGateway.BLL
         {
             try
             {
-                var channelNames = _configuration.GetSection("Redis:RedisChannels").Get<List<string>>();
+                var channelNames = _configuration.GetSection(CConfig.__REDIS_CHANNEL).Get<List<string>>();
 
                 this._s6GApp.InfoLogger.LogInfo("StartListeningToRedisChannel");
 
@@ -86,6 +95,9 @@ namespace PriceGateway.BLL
                     try
                     {
                         var msg = message.ToString();
+
+                        //có thể biến đổi msg trước khi send cho client ở đây....
+
                         await _hubChannel.Clients.Group(channel).ReceiveMessage(channel, msg);
                     }
                     catch (Exception ex)
@@ -101,5 +113,35 @@ namespace PriceGateway.BLL
                 this._s6GApp.ErrorLogger.LogError(ex);
             }
         }
+
+        private void CountClientsAndLog(object state)
+        {
+            try
+            {
+                // Lấy tất cả các client từ ClientConnectionStore
+                var clients = _clientStore.GetAll();
+                var clientCount = clients.Count;
+
+                // Ghi số lượng client vào log
+                _s6GApp.InfoLogger.LogInfo($"Total clients connected: {clientCount}");
+
+                // Ghi thông tin chi tiết về các client vào log
+                foreach (var client in clients)
+                {
+                    var clientInfo = $"ConnectionID: {client.ConnectionID}, " +
+                                     $"TransportName: {client.TransportName}, " +
+                                     $"ServerIP: {client.ServerIP}, " +
+                                     $"ClientPublicIP: {client.ClientPublicIP}, " +
+                                     $"HttpUserAgent: {client.HttpUserAgent}";
+
+                    _s6GApp.InfoLogger.LogInfo(clientInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                _s6GApp.ErrorLogger.LogError(ex);
+            }
+        }
+
     }
 }
