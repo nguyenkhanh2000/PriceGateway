@@ -1249,6 +1249,11 @@ namespace BaseRedisLib.Implementations
             public string Key { get; set; }
             public string Value { get; set; }
         }
+        public class ResPrice
+        {
+            public string Key { get; set; }
+            public object Value { get; set; }
+        }
         public bool Key_Exists(string key)
         {
             return this._db.KeyExists(key);

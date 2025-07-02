@@ -39,6 +39,7 @@ builder.Services.AddSingleton<Lazy<ConnectionMultiplexer>>(sp =>
 builder.Services.AddSignalR();
 
 builder.Services.AddSignalR()
+    .AddJsonProtocol()
     .AddMessagePackProtocol(); // hỗ trợ MessagePack
 
 builder.Services.AddTransient<IPriceHandle, CPriceHandle>();
