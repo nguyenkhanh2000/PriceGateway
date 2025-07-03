@@ -1228,6 +1228,7 @@ namespace BaseRedisLib.Implementations
                 return null;
             }
         }
+        
         public bool HashDelete(string key, string hashField)
         {
             // debug
@@ -1243,7 +1244,39 @@ namespace BaseRedisLib.Implementations
                 return false;
             }
         }
+        /// <summary>
+        /// Lấy một instance của IServer từ kết nối Redis.
+        /// Cần thiết để thực thi các lệnh ở cấp độ server như KEYS/SCAN.
+        /// </summary>
+        /// <returns>Một đối tượng IServer.</returns>
+        /// <exception cref="InvalidOperationException">Ném ra khi không tìm thấy endpoint nào.</exception>
+        public IServer GetServer()
+        {
+            // Lấy danh sách tất cả các endpoints (máy chủ) mà ConnectionMultiplexer đang kết nối
+            //var endpoints = this._redis.GetEndPoints();
 
+            //if (endpoints.Length == 0)
+            //{
+            //    throw new InvalidOperationException("Không tìm thấy endpoint nào của Redis server trong kết nối.");
+            //}
+
+            //// Trả về server của endpoint đầu tiên tìm thấy.
+            //// Đối với lệnh SCAN, việc chọn server nào thường không quan trọng.
+            //return this._redis.GetServer(endpoints.First());
+
+
+            
+            var endpoints = _redis.GetEndPoints();
+            foreach (var endpoint in endpoints)
+            {
+                var server = _redis.GetServer(endpoint);
+                if (server.IsConnected && !server.IsSlave)
+                {
+                    return server; // Đây là master
+                }
+            }
+            throw new Exception("Không tìm thấy Redis master.");
+        }
         public class HashKeyRedis
         {
             public string Key { get; set; }
@@ -1254,6 +1287,15 @@ namespace BaseRedisLib.Implementations
             public string Key { get; set; }
             public object Value { get; set; }
         }
+        public class GroupedPriceResult
+        {
+            // Key sẽ là các msgType như "D", "F", "ME"...
+            public string Key { get; set; }
+
+            // Value là danh sách các object dữ liệu đã được deserialize
+            public List<object> Value { get; set; }
+        }
+
         public bool Key_Exists(string key)
         {
             return this._db.KeyExists(key);

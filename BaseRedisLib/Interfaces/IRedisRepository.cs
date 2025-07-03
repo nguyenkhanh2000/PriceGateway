@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StackExchange.Redis;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,7 @@ namespace BaseRedisLib.Interfaces
 {
     public interface IRedisRepository : IInstance
     {
+        IServer GetServer();
         // props
         object ConnectionMultiplexer { get; }
         object Subscriber { get; }
@@ -43,6 +45,6 @@ namespace BaseRedisLib.Interfaces
         bool HashSet(string key, string hashField, object value);
         string Hash_Get(string key, string field);
         bool HashDelete(string key, string hashField);
-        bool Key_Exists(string key);
+        bool Key_Exists(string key);        
     }
 }
