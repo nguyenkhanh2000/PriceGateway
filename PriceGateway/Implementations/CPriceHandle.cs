@@ -5,8 +5,10 @@ using CommonLib.Interfaces;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PriceGateway.BLL;
 using PriceGateway.Interfaces;
+using PriceGateway.Models;
 using StackExchange.Redis;
 using StockCore.Redis.MW;
 using System;
@@ -220,7 +222,7 @@ namespace PriceGateway.Implementations
                         {
                             valuesForThisMsgType.Add(JsonConvert.DeserializeObject(value.ToString()));
                         }
-                    }
+                    }                   
                     // THAY ĐỔI: Tạo một đối tượng GroupedPriceResult và thêm vào danh sách kết quả
                     // Ngay cả khi không có mã nào được tìm thấy, nó vẫn thêm một mục với danh sách rỗng.
                     finalData.Add(new GroupedPriceResult
@@ -228,7 +230,7 @@ namespace PriceGateway.Implementations
                         Key = currentMsgType,
                         Value = valuesForThisMsgType
                     });
-                }
+                }               
 
                 //// 6. Tổng hợp dữ liệu theo từng msgType
                 //// Cấu trúc cuối cùng sẽ là Dictionary<string, List<HashKeyRedis>>
@@ -324,6 +326,7 @@ namespace PriceGateway.Implementations
             TExecutionContext ec = this._s6GApp.DebugLogger.WriteBufferBegin($"{EGlobalConfig.__STRING_BEFORE} TypeMsg={TypeMsg}, Exchange={Exchange}", true);
             try
             {
+
                 List<dynamic> _lstData = new List<dynamic>();
                 ConnectRedisMWS5GModel CM = new ConnectRedisMWS5GModel();
                 CM.DB = Int32.Parse(_configuration.GetSection(CConfig.__CONNECTION_REDIS_DB0).Value);
@@ -375,5 +378,190 @@ namespace PriceGateway.Implementations
                 return RM;
             }
         }
+        public async Task<EResponseResult> fnc_Get_Basket(string Exchange)
+        {
+            TExecutionContext ec = this._s6GApp.DebugLogger.WriteBufferBegin($"{EGlobalConfig.__STRING_BEFORE}, Exchange={Exchange}", true);
+            try
+            {
+                string exchange = Exchange.ToUpper();
+
+                // Sử dụng int.TryParse để tránh lỗi nếu giá trị config không hợp lệ
+                if (!int.TryParse(_configuration.GetSection(CConfig.__CONNECTION_REDIS_DB0).Value, out int dbIndex))
+                {
+                    // Ghi log hoặc trả về lỗi nếu không đọc được cấu hình DB
+                    // Ở đây tạm gán giá trị mặc định là 0
+                    dbIndex = 0;
+                }
+
+                ConnectRedisMWS5GModel CM = new ConnectRedisMWS5GModel { DB = dbIndex };
+                IRedisRepository _cRedisRepository = new CRedisRepository(_s6GApp, _redis_Sentinel, CM.DB);
+
+                // Khai báo _lstData với kiểu cụ thể hơn nếu có thể, ví dụ List<object>
+                var _lstData = new List<object>();
+
+                string redisKey = "";
+
+                switch (exchange)
+                {
+                    case "HSX":
+                        redisKey = _configuration.GetSection(CConfig.__KEY_LIST_HSX).Value;
+                        break;
+                    case "HNX":
+                        redisKey = _configuration.GetSection(CConfig.__KEY_LIST_HNX).Value;
+                        break;
+                    case "FU":
+                        redisKey = _configuration.GetSection(CConfig.__KEY_LIST_FU).Value;
+                        break;
+                    case "CW":
+                        redisKey = _configuration.GetSection(CConfig.__KEY_LIST_CW).Value;
+                        break;
+                    case "ALL":
+                        var exchanges = new Dictionary<string, Type>
+                        {
+                            { "HSX", typeof(Basket_Model_HSX) },
+                            { "HNX", typeof(Basket_Model_HNX) },
+                            { "FU", typeof(Basket_Model_FU) },
+                            { "CW", typeof(string) }
+                        };
+                        foreach (var ex in exchanges)
+                        {
+                            string exRedisKey = _configuration.GetSection(ex.Key switch
+                            {
+                                "HSX" => CConfig.__KEY_LIST_HSX,
+                                "HNX" => CConfig.__KEY_LIST_HNX,
+                                "FU" => CConfig.__KEY_LIST_FU,
+                                "CW" => CConfig.__KEY_LIST_CW,
+                                _ => ""
+                            }).Value;
+                            if (string.IsNullOrEmpty(exRedisKey)) continue;
+
+                            string exDataRedis = _cRedisRepository.String_Get(exRedisKey, CM.DB);
+                            if (string.IsNullOrEmpty(exDataRedis)) continue;
+
+                            var exInnerJsonString = JsonConvert.DeserializeObject<string>(exDataRedis);
+                            if (ex.Key == "CW")
+                            {
+                                var jsonObjCW_ALL = JsonConvert.DeserializeObject<RootObject<string>>(exInnerJsonString);
+                                var basketDataCW_ALL = jsonObjCW_ALL?.Data?.FirstOrDefault();
+                                if (!string.IsNullOrEmpty(basketDataCW_ALL))
+                                {
+                                    _lstData.Add(new Dictionary<string, string> { { "CW", basketDataCW_ALL } });
+                                }
+                            }
+                            else
+                            {
+                                var genericType = typeof(RootObject<>).MakeGenericType(ex.Value);
+                                var jsonObj = JsonConvert.DeserializeObject(exInnerJsonString, genericType);
+                                var dataProperty = genericType.GetProperty("Data")?.GetValue(jsonObj);
+
+                                var firstItem = (dataProperty as System.Collections.IEnumerable)?.Cast<object>().FirstOrDefault();
+                                if (firstItem != null) _lstData.Add(firstItem);
+                            } 
+                        }
+                        this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + _lstData.Count);
+                        return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = _lstData };
+                        break;
+                }
+                if (string.IsNullOrEmpty(redisKey))
+                {
+                    return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = "Invalid Exchange" };
+                }
+                string dataRedis = _cRedisRepository.String_Get(redisKey, CM.DB);
+                if (string.IsNullOrEmpty(dataRedis))
+                {
+                    return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = string.Empty };
+                }
+                //Dữ liệu trong Redis đang bị "double-encoded" (JSON trong JSON).
+                var innerJsonString = JsonConvert.DeserializeObject<string>(dataRedis);
+                switch (exchange)
+                {
+                    case "HSX":
+                        var jsonObjHSX = JsonConvert.DeserializeObject<RootObject<Basket_Model_HSX>>(innerJsonString);
+                        var basketDataHSX = jsonObjHSX?.Data?.FirstOrDefault();
+                        if (basketDataHSX != null) _lstData.Add(basketDataHSX);
+                        break;
+                    case "HNX":
+                        var jsonObjHNX = JsonConvert.DeserializeObject<RootObject<Basket_Model_HNX>>(innerJsonString);
+                        var basketDataHNX = jsonObjHNX?.Data?.FirstOrDefault();
+                        if (basketDataHNX != null) _lstData.Add(basketDataHNX);
+                        break;
+                    case "FU":
+                        var jsonObjFU = JsonConvert.DeserializeObject<RootObject<Basket_Model_FU>>(innerJsonString);
+                        var basketDataFu = jsonObjFU?.Data?.FirstOrDefault();
+                        if (basketDataFu != null) _lstData.Add(basketDataFu);
+                        break;
+                    case "CW":
+                        var jsonObjCW = JsonConvert.DeserializeObject<RootObject<string>>(innerJsonString);
+                        var basketDataCW = jsonObjCW?.Data?.FirstOrDefault();
+                        //if (basketDataCW != null) _lstData.Add(basketDataCW);
+                        if (!string.IsNullOrEmpty(basketDataCW))
+                        {
+                            _lstData.Add(new Dictionary<string, string> { { "CW", basketDataCW } });
+                        }
+                        break;
+                }
+
+                this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + _lstData.Count);
+                return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = _lstData };
+            }
+            catch (Exception ex)
+            {
+                // log error + buffer data
+                this._s6GApp.ErrorLogger.LogError(ex);
+                EResponseResult RM = new EResponseResult();
+                RM.Code = EGlobalConfig.__CODE_ERROR_IN_LAYER_BLL;
+                return RM;
+            }
+        }
+        //public async Task<EResponseResult> fnc_Get_Basket(string Exchange)
+        //{
+        //    try
+        //    {
+        //        string exchange = Exchange.ToUpper();
+        //        ConnectRedisMWS5GModel CM = new ConnectRedisMWS5GModel();
+        //        CM.DB = Int32.Parse(_configuration.GetSection(CConfig.__CONNECTION_REDIS_DB0).Value);
+        //        IRedisRepository _cRedisRepository = new CRedisRepository(_s6GApp, _redis_Sentinel, CM.DB);
+        //        List<dynamic> _lstData = new List<dynamic>();
+        //        switch (exchange)
+        //        {
+        //            case "HSX":
+        //                CM.key = _configuration.GetSection(CConfig.__KEY_LIST_HSX).Value;
+        //                string DataRedis = _cRedisRepository.String_Get(CM.key, CM.DB);
+        //                if (!string.IsNullOrEmpty(DataRedis))
+        //                {
+        //                    // Deserialize lần thứ nhất (chuỗi bên ngoài)
+        //                    var innerJsonString = JsonConvert.DeserializeObject<string>(DataRedis);
+
+        //                    // Deserialize lần thứ hai (chuỗi JSON thực sự)
+        //                    var jsonObj = JsonConvert.DeserializeObject<RootObject>(innerJsonString);
+        //                    var basketData = jsonObj.Data.FirstOrDefault();
+        //                    if (basketData != null)
+        //                    {
+        //                        _lstData = JsonConvert.SerializeObject(basketData);
+        //                    }
+        //                }
+        //                break;
+        //            case "HNX":
+
+        //                break ;
+        //            case "FU":
+
+        //                break ;
+        //            case "CW":
+
+        //                break ;
+        //        }
+
+        //        return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = _lstData };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // log error + buffer data
+        //        this._s6GApp.ErrorLogger.LogError(ex);
+        //        EResponseResult RM = new EResponseResult();
+        //        RM.Code = EGlobalConfig.__CODE_ERROR_IN_LAYER_BLL;
+        //        return RM;
+        //    }
+        //}
     }
 }
