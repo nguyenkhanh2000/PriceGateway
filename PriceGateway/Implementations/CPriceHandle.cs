@@ -423,6 +423,8 @@ namespace PriceGateway.Implementations
                             { "FU", typeof(Basket_Model_FU) },
                             { "CW", typeof(string) }
                         };
+                        var combinedData = new Dictionary<string, object>();
+                        
                         foreach (var ex in exchanges)
                         {
                             string exRedisKey = _configuration.GetSection(ex.Key switch
@@ -445,7 +447,7 @@ namespace PriceGateway.Implementations
                                 var basketDataCW_ALL = jsonObjCW_ALL?.Data?.FirstOrDefault();
                                 if (!string.IsNullOrEmpty(basketDataCW_ALL))
                                 {
-                                    _lstData.Add(new Dictionary<string, string> { { "CW", basketDataCW_ALL } });
+                                    combinedData["CW"] = basketDataCW_ALL;
                                 }
                             }
                             else
@@ -455,11 +457,28 @@ namespace PriceGateway.Implementations
                                 var dataProperty = genericType.GetProperty("Data")?.GetValue(jsonObj);
 
                                 var firstItem = (dataProperty as System.Collections.IEnumerable)?.Cast<object>().FirstOrDefault();
-                                if (firstItem != null) _lstData.Add(firstItem);
+                                if (firstItem != null)
+                                {
+                                    var properties = firstItem.GetType().GetProperties();
+                                    foreach (var prop in properties)
+                                    {
+                                        combinedData[prop.Name] = prop.GetValue(firstItem);
+                                    }
+                                }
+                                //var genericType = typeof(RootObject<>).MakeGenericType(ex.Value);
+                                //var jsonObj = JsonConvert.DeserializeObject(exInnerJsonString, genericType);
+                                //var dataProperty = genericType.GetProperty("Data")?.GetValue(jsonObj);
+                                //var items = (dataProperty as System.Collections.IEnumerable)?.Cast<object>();
+                                ////var firstItem = (dataProperty as System.Collections.IEnumerable)?.Cast<object>().FirstOrDefault();
+                                ////if (firstItem != null) _lstData.Add(firstItem);
+                                //if (items != null)
+                                //{
+                                //    combinedData[ex.Key] = items;
+                                //}
                             } 
                         }
-                        this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + _lstData.Count);
-                        return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = _lstData };
+                        this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + combinedData.Count);
+                        return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = combinedData };
                         break;
                 }
                 if (string.IsNullOrEmpty(redisKey))
