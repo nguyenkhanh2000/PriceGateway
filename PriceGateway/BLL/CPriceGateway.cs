@@ -106,7 +106,7 @@ namespace PriceGateway.BLL
                     }
                 });
 
-                this._s6GApp.InfoLogger.LogInfo($"Subscribed to channel: {channel}");
+                //this._s6GApp.InfoLogger.LogInfo($"Subscribed to channel: {channel}");
             }
             catch (Exception ex)
             {
