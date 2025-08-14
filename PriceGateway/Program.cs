@@ -28,10 +28,10 @@ builder.Services.Configure<IISOptions>(options =>
 });
 
 //Connect Redis 250
-var redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionString").Value;
+var redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionStringRedisSub").Value;
 builder.Services.AddSingleton<Lazy<ConnectionMultiplexer>>(sp => new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect($"{redisConnectionString}")));
 //Connect Redis Sentinel
-var redisConnectionString2 = builder.Configuration.GetSection("Redis:ConnectionString_NewAPP").Value;
+var redisConnectionString2 = builder.Configuration.GetSection("Redis:ConnectionStringRedisSentinel").Value;
 builder.Services.AddSingleton<Lazy<ConnectionMultiplexer>>(sp =>
     new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(redisConnectionString2)));
 
