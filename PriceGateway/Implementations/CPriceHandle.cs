@@ -183,8 +183,9 @@ namespace PriceGateway.Implementations
                 var fieldsToFetch = liststockCode.Select(code => (RedisValue)code).ToArray();
 
                 // 2. Chuẩn bị các key Redis (ứng với các message type) cần truy vấn
-                var msgTypes = new List<string> { "D", "F", "ME", "MT", "X_KL", "X_TP" };
-                var redisKeys = msgTypes.Select(mt => (RedisKey)$"MDDS:{mt}:{Board}").ToList();
+                var msgTypes = _configuration.GetSection(CConfig.__KEY_MESSAGE_TYPES)
+                            .Get<string[]>() ?? Array.Empty<string>();
+                var redisKeys = msgTypes.Select(mt => (RedisKey)$"{_configuration.GetSection(CConfig.__KEY_MDDS).Value}:{mt}:{Board}").ToList();
 
                 // 3. Khởi tạo kết nối và tạo batch (pipeline)
                 IDatabase redisDb = _redis_Sentinel.GetDatabase(Int32.Parse(_configuration.GetSection(CConfig.__CONNECTION_REDIS_DB0).Value)); 
@@ -334,7 +335,7 @@ namespace PriceGateway.Implementations
                 IRedisRepository _cRedisRepository = new CRedisRepository(_s6GApp, _redis_Sentinel, CM.DB);
                 if (!string.IsNullOrEmpty(Exchange)) //Get theo exchange
                 {
-                    string pattern = $"MDDS:{TypeMsg}:{Exchange}";
+                    string pattern = $"{_configuration.GetSection(CConfig.__KEY_MDDS).Value}:{TypeMsg}:{Exchange}";
                     List<HashKeyRedis> DataRD_Hash = _cRedisRepository.Hash_Get_All(pattern);
                     foreach(var item in DataRD_Hash)
                     {
@@ -345,7 +346,7 @@ namespace PriceGateway.Implementations
                 else //Get all
                 {
                     // 1. Định nghĩa pattern để tìm kiếm keys
-                    string pattern = $"MDDS:{TypeMsg}:*";
+                    string pattern = $"{_configuration.GetSection(CConfig.__KEY_MDDS).Value}:{TypeMsg}:*";
 
                     // 2. Lấy tất cả các server endpoints để thực hiện SCAN
                     var server = _cRedisRepository.GetServer(); 
