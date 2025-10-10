@@ -7,9 +7,9 @@ using SystemCore.Entities;
 
 namespace PriceGateway.Controllers
 {
-    [Route(CPriceConfig.__ROUTE_API_GET_FULL_ROW_QUOTE)]  //Định nghĩa route của api
+    [Route(CPriceConfig.__ROUTE_API_GET_PRICE)]  //Định nghĩa route của api
     [ApiController]
-    public class ApiGetFullQuote : Controller
+    public class ApiGetPrice : Controller
     {
         public readonly IS6GApp _cS6GApp;
         private readonly IPriceHandle _handle;
@@ -18,32 +18,23 @@ namespace PriceGateway.Controllers
         /// </summary>
         /// <param name="handler"></param>
         /// <param name="cS6GApp"></param>
-        public ApiGetFullQuote(IPriceHandle handler, IS6GApp cS6GApp) 
+        public ApiGetPrice(IPriceHandle handler, IS6GApp cS6GApp) 
         {
             this._handle = handler;
             this._cS6GApp = cS6GApp;
         }
-        /// <summary>
-        /// --khanhnv
-        /// Get data Full quote
-        /// </summary>
-        /// <param name="exchange"></param>
-        /// <param name="typemsg"></param>
-        /// <returns></returns>
         [HttpGet]
-        public async Task<IActionResult> Api_Get_Full_Quote(string exchange, string typemsg)
+        public async Task<IActionResult> Api_Get_Price(string Symbol, string Board)
         {
             try
             {
-                string Board = HttpContext.Request.Query["board"];
-                string Symbol = HttpContext.Request.Query["symbol"];
                 //1.handle
-                EResponseResult responseResult = await this._handle.fnc_Get_Full_Quote(exchange, typemsg, Board, Symbol);
+                EResponseResult responseResult = await this._handle.fnc_Get_Full_Price(Symbol, Board);
                 string json = JsonConvert.SerializeObject(responseResult);
                 // 2. return response (code 200)
                 return Content(json);
             }
-            catch (Exception ex)
+            catch (Exception ex) 
             {
                 // log error + buffer data
                 this._cS6GApp.ErrorLogger.LogError(ex);
@@ -52,7 +43,7 @@ namespace PriceGateway.Controllers
                 // return null
                 return Content(json);
             }
-        }  
-        
+            
+        }
     }
 }

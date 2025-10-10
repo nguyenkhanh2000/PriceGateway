@@ -2,6 +2,6 @@
 {
     public interface IPriceGateway
     {
-        void StartListeningToRedisChannel();
+        Task StartListeningToRedisChannel();
     }
 }

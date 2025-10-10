@@ -28,18 +28,26 @@ builder.Services.Configure<IISOptions>(options =>
 });
 
 //Connect Redis 250
-var redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionString").Value;
+var redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionStringRedisSub").Value;
 builder.Services.AddSingleton<Lazy<ConnectionMultiplexer>>(sp => new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect($"{redisConnectionString}")));
 //Connect Redis Sentinel
-var redisConnectionString2 = builder.Configuration.GetSection("Redis:ConnectionString_NewAPP").Value;
+var redisConnectionString2 = builder.Configuration.GetSection("Redis:ConnectionStringRedisSentinel").Value;
 builder.Services.AddSingleton<Lazy<ConnectionMultiplexer>>(sp =>
     new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(redisConnectionString2)));
+
+//add signalR
+builder.Services.AddSignalR();
+
+builder.Services.AddSignalR()
+    .AddJsonProtocol()
+    .AddMessagePackProtocol(); // hỗ trợ MessagePack
 
 builder.Services.AddTransient<IPriceHandle, CPriceHandle>();
 builder.Services.AddSingleton<IPriceGateway, CPriceGateway>();
 builder.Services.AddHostedService<PriceGatewayListenerService>();
-//add signalR
-builder.Services.AddSignalR();
+builder.Services.AddSingleton<IClientConnectionStore, ClientConnectionStore>();
+
+
 //builder.Services.AddHostedService<RealtimeDataPusher>();
 string[] DomainCors = builder.Configuration.GetSection("DomainCors").Value.Split(",");
 builder.Services.AddCors(options =>
@@ -80,8 +88,6 @@ app.UseEndpoints(endpoints =>
     });
 });
 //map signalR hub endpoint
-app.MapHub<HubEx>("/HubKhanhNV");
-app.MapHub<Hub_HSX>("/HubHSX");
-app.MapHub<Hub_HNX>("/HubHNX");
+app.MapHub<ChannelHub>("/channelHub");
 
 app.Run();
