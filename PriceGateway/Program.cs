@@ -88,9 +88,6 @@ app.UseEndpoints(endpoints =>
     });
 });
 //map signalR hub endpoint
-app.MapHub<HubEx>("/HubKhanhNV");
-app.MapHub<Hub_HSX>("/HubHSX");
-app.MapHub<Hub_HNX>("/HubHNX");
 app.MapHub<ChannelHub>("/channelHub");
 
 app.Run();

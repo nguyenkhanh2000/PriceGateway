@@ -232,40 +232,6 @@ namespace PriceGateway.Implementations
                         Value = valuesForThisMsgType
                     });
                 }               
-
-                //// 6. Tổng hợp dữ liệu theo từng msgType
-                //// Cấu trúc cuối cùng sẽ là Dictionary<string, List<HashKeyRedis>>
-                //var finalData = new Dictionary<string, List<ResPrice>>(); 
-                ////D : [key;value]
-
-                //// Duyệt qua kết quả của từng key, tương ứng với mỗi msgType
-                //for (int i = 0; i < results.Length; i++)
-                //{
-                //    string currentMsgType = msgTypes[i];
-                //    RedisValue[] valueSet = results[i];
-
-                //    // Tạo một danh sách mới để chứa dữ liệu của riêng msgType này
-                //    var dataForThisMsgType = new List<ResPrice>();
-
-                //    // Duyệt qua từng giá trị trả về cho mỗi mã chứng khoán đã yêu cầu
-                //    for (int j = 0; j < valueSet.Length; j++)
-                //    {
-                //        RedisValue value = valueSet[j];
-                //        if (!value.IsNullOrEmpty)
-                //        {
-                //            // Thêm dữ liệu (mã và giá trị) vào danh sách của msgType hiện tại
-                //            dataForThisMsgType.Add(new ResPrice
-                //            {
-                //                Key = liststockCode[j], // Mã chứng khoán
-                //                Value = JsonConvert.DeserializeObject(value.ToString())          // Giá trị tương ứng
-                //            });
-                //        }
-                //    }
-
-                //    // Đưa danh sách dữ liệu của msgType này vào Dictionary kết quả.
-                //    // Ngay cả khi không có mã nào được tìm thấy, nó vẫn thêm một key với danh sách rỗng.
-                //    finalData[currentMsgType] = dataForThisMsgType;
-                //}
                 this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + finalData.Count);
                 // 7. Trả về kết quả thành công với dữ liệu đã được nhóm theo msgType
                 return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = finalData };
@@ -308,7 +274,6 @@ namespace PriceGateway.Implementations
                 //convert to json
                 dynamic Seq_data = JsonConvert.DeserializeObject<dynamic>(DataRedis);
 
-                //object Seq = JsonConvert.DeserializeObject<object>(Seq_data);
                 this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + DataRedis.Length);
 
                 return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = Seq_data };
@@ -466,16 +431,6 @@ namespace PriceGateway.Implementations
                                         combinedData[prop.Name] = prop.GetValue(firstItem);
                                     }
                                 }
-                                //var genericType = typeof(RootObject<>).MakeGenericType(ex.Value);
-                                //var jsonObj = JsonConvert.DeserializeObject(exInnerJsonString, genericType);
-                                //var dataProperty = genericType.GetProperty("Data")?.GetValue(jsonObj);
-                                //var items = (dataProperty as System.Collections.IEnumerable)?.Cast<object>();
-                                ////var firstItem = (dataProperty as System.Collections.IEnumerable)?.Cast<object>().FirstOrDefault();
-                                ////if (firstItem != null) _lstData.Add(firstItem);
-                                //if (items != null)
-                                //{
-                                //    combinedData[ex.Key] = items;
-                                //}
                             } 
                         }
                         this._s6GApp.SqlLogger.LogSqlContext2("", ec, " ==> Output  " + combinedData.Count);
@@ -532,56 +487,6 @@ namespace PriceGateway.Implementations
                 RM.Code = EGlobalConfig.__CODE_ERROR_IN_LAYER_BLL;
                 return RM;
             }
-        }
-        //public async Task<EResponseResult> fnc_Get_Basket(string Exchange)
-        //{
-        //    try
-        //    {
-        //        string exchange = Exchange.ToUpper();
-        //        ConnectRedisMWS5GModel CM = new ConnectRedisMWS5GModel();
-        //        CM.DB = Int32.Parse(_configuration.GetSection(CConfig.__CONNECTION_REDIS_DB0).Value);
-        //        IRedisRepository _cRedisRepository = new CRedisRepository(_s6GApp, _redis_Sentinel, CM.DB);
-        //        List<dynamic> _lstData = new List<dynamic>();
-        //        switch (exchange)
-        //        {
-        //            case "HSX":
-        //                CM.key = _configuration.GetSection(CConfig.__KEY_LIST_HSX).Value;
-        //                string DataRedis = _cRedisRepository.String_Get(CM.key, CM.DB);
-        //                if (!string.IsNullOrEmpty(DataRedis))
-        //                {
-        //                    // Deserialize lần thứ nhất (chuỗi bên ngoài)
-        //                    var innerJsonString = JsonConvert.DeserializeObject<string>(DataRedis);
-
-        //                    // Deserialize lần thứ hai (chuỗi JSON thực sự)
-        //                    var jsonObj = JsonConvert.DeserializeObject<RootObject>(innerJsonString);
-        //                    var basketData = jsonObj.Data.FirstOrDefault();
-        //                    if (basketData != null)
-        //                    {
-        //                        _lstData = JsonConvert.SerializeObject(basketData);
-        //                    }
-        //                }
-        //                break;
-        //            case "HNX":
-
-        //                break ;
-        //            case "FU":
-
-        //                break ;
-        //            case "CW":
-
-        //                break ;
-        //        }
-
-        //        return new EResponseResult() { Code = EDalResult.__CODE_SUCCESS, Message = EDalResult.__STRING_SUCCESS, Data = _lstData };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // log error + buffer data
-        //        this._s6GApp.ErrorLogger.LogError(ex);
-        //        EResponseResult RM = new EResponseResult();
-        //        RM.Code = EGlobalConfig.__CODE_ERROR_IN_LAYER_BLL;
-        //        return RM;
-        //    }
-        //}
+        }        
     }
 }

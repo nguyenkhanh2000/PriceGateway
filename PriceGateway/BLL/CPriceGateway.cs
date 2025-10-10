@@ -20,8 +20,6 @@ namespace PriceGateway.BLL
         private IConfiguration _configuration; //Cấu hình ứng dụng
         private readonly IClientConnectionStore _clientStore;
 
-        private readonly IHubContext<Hub_HSX, IHubClient> _hubClient_HSX;
-        private readonly IHubContext<Hub_HNX, IHubClient> _hubClient_HNX;
         private readonly IHubContext<ChannelHub,IHubClient> _hubChannel; // HubContext cho các kênh Redis
 
         private Timer _clientCountTimer;
@@ -36,7 +34,7 @@ namespace PriceGateway.BLL
         /// <param name="hubClient_HNX"></param>
         /// <param name="hubChannel"></param>
         /// <param name="clientStore"></param>
-        public CPriceGateway(IS6GApp s6GApp, Lazy<ConnectionMultiplexer> redis, Lazy<ConnectionMultiplexer> redis_Sentinel, IConfiguration configuration, IHubContext<Hub_HSX, IHubClient> hubClient_HSX, IHubContext<Hub_HNX, IHubClient> hubClient_HNX, IHubContext<ChannelHub, IHubClient> hubChannel, IClientConnectionStore clientStore) 
+        public CPriceGateway(IS6GApp s6GApp, Lazy<ConnectionMultiplexer> redis, Lazy<ConnectionMultiplexer> redis_Sentinel, IConfiguration configuration, IHubContext<ChannelHub, IHubClient> hubChannel, IClientConnectionStore clientStore) 
         {
             this._s6GApp = s6GApp;
             this._redis = redis.Value;
@@ -44,8 +42,6 @@ namespace PriceGateway.BLL
             this._configuration = configuration;
             this._clientStore = clientStore;
 
-            this._hubClient_HSX = hubClient_HSX;
-            this._hubClient_HNX = hubClient_HNX;
             this._hubChannel = hubChannel;
 
             // Khởi tạo Timer để đếm số lượng client mỗi 30 giây
